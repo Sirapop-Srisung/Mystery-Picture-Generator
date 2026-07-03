@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Math Mystery Picture Generator Pro</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:#eef2f7;color:#111}.app{display:grid;grid-template-columns:330px 1fr;height:100vh}.side{background:#fff;border-right:1px solid #ddd;padding:16px;overflow:auto}.main{overflow:auto;padding:22px}h1{font-size:21px;margin:0 0 14px}h3{margin:0 0 10px}.box{border:1px solid #ddd;border-radius:12px;padding:12px;margin-bottom:12px;background:#fff}label{display:block;font-weight:700;font-size:13px;margin-top:10px}input,textarea,button{width:100%;padding:9px;margin-top:6px;border:1px solid #cbd5e1;border-radius:8px;font-size:14px}textarea{min-height:105px;resize:vertical}button{background:#6d28d9;color:#fff;border:0;font-weight:800;cursor:pointer}button:hover{background:#5b21b6}.green{background:#16a34a}.gray{background:#475569}.orange{background:#ea580c}.row{display:grid;grid-template-columns:1fr 1fr;gap:8px}.hint{font-size:12px;color:#64748b;line-height:1.45}.toolbar{position:sticky;top:0;background:#eef2f7;padding-bottom:16px;display:flex;gap:8px;z-index:10;flex-wrap:wrap}.toolbar button{width:auto;padding:10px 16px}.status{font-size:13px;color:#475569;margin-top:8px;line-height:1.4}
+:root{--page-w:8.5in;--page-h:11in}
+.page{width:var(--page-w);height:var(--page-h);background:white;margin:0 auto 30px;position:relative;padding:.35in .26in;box-shadow:0 6px 20px rgba(0,0,0,.18);overflow:hidden}.topline{display:flex;align-items:center;gap:.1in;font-size:.21in;margin:0 .12in .55in .12in;white-space:nowrap}.name-line{width:2.8in;border-bottom:2px solid #111;height:.2in}.date-line{width:1.55in;border-bottom:2px solid #111;height:.2in}.pill{border:2px solid #0b2a3a;border-radius:.25in;padding:.08in .14in;white-space:nowrap;font-size:.21in}.outer-box{position:absolute;left:.25in;right:.25in;top:1.35in;bottom:.35in;border:2px solid #0b2a3a}.title-pill{position:absolute;top:1.02in;left:50%;transform:translateX(-50%);border:2px solid #0b2a3a;border-radius:.36in;background:white;padding:.13in .32in;font-size:.26in;font-weight:900;white-space:nowrap;z-index:5;text-align:center}.answer-title{position:absolute;top:1.02in;left:50%;transform:translateX(-50%);border:2px solid #0b2a3a;border-radius:.36in;background:white;padding:.13in .8in;font-size:.29in;font-weight:900;z-index:5}.instructions{position:absolute;left:.66in;right:.66in;top:1.72in;font-size:.245in;line-height:1.35;white-space:pre-line}.problem-grid{position:absolute;left:.45in;right:.45in;top:2.90in;height:7.55in;display:grid;border-left:1.5px solid #111;border-top:1.5px solid #111}.problem-cell{border-right:1.5px solid #111;border-bottom:1.5px solid #111;display:flex;align-items:center;justify-content:center;font-size:.38in;line-height:1.25;text-align:center}.math-problem{display:inline-flex;flex-direction:column;align-items:flex-end;font-variant-numeric:tabular-nums;min-width:0.8in}.math-bottom{display:flex;justify-content:space-between;align-items:center;width:100%;border-bottom:3px solid #111;padding-bottom:2px;gap:0.15in}.math-fraction{display:inline-flex;flex-direction:column;align-items:center;font-variant-numeric:tabular-nums;line-height:1.1}.math-numerator{border-bottom:3px solid #111;width:100%;text-align:center;padding:0 6px 2px 6px}.math-denominator{width:100%;text-align:center;padding:2px 6px 0 6px}.piece-grid{position:absolute;left:.35in;right:.35in;top:2.80in;height:7.7in;display:grid;border:0;gap:.055in}.piece{border:1.5px dashed #111;position:relative;overflow:hidden;background:white}.piece canvas{width:100%;height:100%;display:block}.num{position:absolute;top:.2in;right:.28in;background:white;border:1px solid #111;padding:.04in .12in;font-size:.23in;z-index:3;user-select:none;-webkit-user-select:none;cursor:move}.key-grid{position:absolute;left:.45in;right:.45in;top:2.90in;height:7.55in;display:grid;border-left:1.5px solid #777;border-top:1.5px solid #777;overflow:hidden}.key-grid canvas{position:absolute;inset:0;width:100%;height:100%;z-index:0}.key-cell{border-right:1.5px solid #777;border-bottom:1.5px solid #777;position:relative;z-index:2;display:flex;align-items:center;justify-content:center}.keynum{background:white;border:1px solid #111;padding:.05in .12in;font-size:.25in;z-index:4;user-select:none;-webkit-user-select:none;cursor:move}.page-footer{position:absolute;bottom:.08in;left:.26in;right:.26in;display:flex;justify-content:flex-end;font-size:.12in;color:#555}.footer-credit{position:absolute;left:50%;transform:translateX(-50%);white-space:nowrap}.hidden{display:none!important}@media print{body{background:white}.side,.toolbar{display:none}.app{display:block}.main{padding:0}.page{box-shadow:none;margin:0;page-break-after:always}}
+.dropzone {
+  border: 2px dashed #6d28d9;
+  border-radius: 12px;
+  padding: 20px 10px;
+  text-align: center;
+  background: #fafafa;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+.dropzone:hover, .dropzone.dragover {
+  background: #f5f3ff;
+  border-color: #4c1d95;
+}
+.dropzone.dragover {
+  transform: scale(1.02);
+}
+.dropzone-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  color: #4b5563;
+  pointer-events: none;
+}
+.upload-icon {
+  color: #6d28d9;
+  transition: transform 0.2s ease-in-out;
+}
+.dropzone.dragover .upload-icon {
+  transform: translateY(-4px);
+}
+.dropzone-text {
+  font-size: 13px;
+  line-height: 1.4;
+}
+.dropzone-text strong {
+  color: #6d28d9;
+}
+.hidden-input {
+  display: none !important;
+}
+.file-name-display {
+  font-size: 11px;
+  color: #6b7280;
+  word-break: break-all;
+}
+
+.preview-watermark {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 10.0in;
+  height: 10.0in;
+  object-fit: contain;
+  opacity: 0.5;
+  z-index: 0;
+  pointer-events: none;
+  display: none;
+}
+.show-watermark .preview-watermark {
+  display: block;
+}
+
+.page-puzzle.show-watermark .preview-watermark,
+.page-key.show-watermark .preview-watermark {
+  z-index: 100;
+  opacity: 0.5;
+}
+</style></head><body>
+<div class="app"><aside class="side"><h1>Math Mystery Picture Generator Pro</h1>
+<div class="box"><h3>Worksheet</h3><label>Worksheet Title</label><input id="title" value="April Fools Day Math Mystery Picture"><label>Skill Tag</label><input id="skill" value="1-Digit Multiplication"><label>Instructions (Worksheet)</label><textarea id="instWorksheet" style="min-height:80px;" oninput="renderAll()">Solve the equations below, then cut out the picture squares.
+Match the numbers on the picture squares to your answers and
+glue them in the correct spots to reveal the mystery picture.</textarea><label>Instructions (Puzzle Page)</label><textarea id="instPuzzle" style="min-height:80px;" oninput="renderAll()">Cut out the picture squares. Match the numbers on the picture squares to your answers and glue them in the correct spots to reveal the mystery picture.</textarea><label>Instructions (Answer Key)</label><textarea id="instKey" style="min-height:80px;" oninput="renderAll()">Answer Key - Solve the equations below, then cut out the picture squares. Match the numbers on the picture squares to your answers and glue them in the correct spots to reveal the mystery picture.</textarea><label>Shop Name (Footer)</label><input id="shopName" value="" placeholder="เช่น Bright Learn" oninput="renderAll()"></div>
+<div class="box"><h3>Grid & Problems</h3><div class="row"><div><label>Rows</label><input id="rows" type="number" value="4" min="2" max="6"></div><div><label>Cols</label><input id="cols" type="number" value="4" min="2" max="6"></div></div><label>Problems, 1 line per box</label><textarea id="problems">6 x 7
+7 x 3
+2 x 8
+9 x 3
+7 x 9
+1 x 9
+9 x 5
+2 x 5
+8 x 7
+2 x 3
+9 x 9
+9 x 6
+3 x 5
+6 x 6
+3 x 6
+9 x 8</textarea><label>Answers / Piece Numbers</label><textarea id="answers">42
+21
+16
+27
+63
+9
+45
+10
+56
+6
+81
+54
+15
+36
+18
+72</textarea><button onclick="renderAll()">Update Preview</button></div>
+<div class="box"><h3>Upload Picture</h3>
+<div id="dropzone" class="dropzone">
+  <input type="file" id="fileInput" accept="image/*" class="hidden-input" onchange="loadImage(event)">
+  <div class="dropzone-content">
+    <svg class="upload-icon" viewBox="0 0 24 24" width="32" height="32">
+      <path fill="currentColor" d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/>
+    </svg>
+    <span class="dropzone-text">ลากและวางรูปภาพที่นี่ หรือ <strong>คลิกเพื่ออัปโหลด</strong></span>
+    <span class="file-name-display hint" id="fileNameDisplay">แนะนำรูปขาวดำแบบ square PNG/JPG เพื่อผลลัพธ์ดีที่สุด</span>
+  </div>
+</div>
+</div>
+<div class="box"><h3>Upload Shop Logo</h3>
+<div id="logoDropzone" class="dropzone">
+  <input type="file" id="logoFileInput" accept="image/*" class="hidden-input" onchange="loadLogo(event)">
+  <div class="dropzone-content">
+    <svg class="upload-icon" viewBox="0 0 24 24" width="32" height="32" style="color: #16a34a;">
+      <path fill="currentColor" d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/>
+    </svg>
+    <span class="dropzone-text">ลากและวางโลโก้ที่นี่ หรือ <strong>คลิกเพื่ออัปโหลด</strong></span>
+    <span class="file-name-display hint" id="logoNameDisplay">แนะนำไฟล์ PNG แบบโปร่งใส (Transparent)</span>
+  </div>
+</div>
+<div style="margin-top: 10px; display: flex; align-items: center; gap: 8px;">
+  <input type="checkbox" id="toggleWatermark" onchange="toggleWatermarkPreview(this.checked)" style="width: auto; margin: 0;">
+  <label for="toggleWatermark" style="margin: 0; font-weight: normal; font-size: 13px; cursor: pointer; user-select: none;">แสดงลายน้ำตรงกลางหน้า (Watermark Preview)</label>
+</div>
+</div>
+<div class="box"><h3>Random Puzzle Pages</h3><label>Number of Puzzle Pages</label><input id="pageCount" type="number" value="10" min="10" max="500"><button class="orange" onclick="generatePuzzlePages()">Generate 10–500 Puzzle Pages</button><button class="gray" onclick="clearPuzzlePages()">Clear Puzzle Pages</button><p class="hint">ใช้ Fisher–Yates Shuffle และกันหน้า Shuffle ซ้ำกัน</p><div id="status" class="status">Ready</div></div>
+<div class="box"><h3>Export</h3><button class="green" onclick="exportAllPDF()">Export Full PDF</button><button class="orange" onclick="exportPreviewPDF()">Export Preview.pdf</button><button onclick="exportWorksheetPDF()">Export Worksheet.pdf</button><button onclick="exportPuzzlePDF()">Export Puzzle Pages.pdf</button><button onclick="exportKeyPDF()">Export Answer Key.pdf</button><button class="gray" onclick="exportPNGZip('png')">Export PNG ZIP</button><button class="gray" onclick="exportPNGZip('jpg')">Export JPG ZIP</button></div></aside>
+<main class="main"><div class="toolbar"><button onclick="showPage('problem')">Worksheet</button><button onclick="showPage('pieces')">Puzzle Pages</button><button onclick="showPage('key')">Answer Key</button><button onclick="showPage('all')">Show All</button><button class="green" onclick="window.print()">Print</button></div>
+<div id="pages"><section id="pageProblem" class="page page-problem"><img class="preview-watermark" alt="Watermark Logo" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"><div class="topline"><span>Name:</span><div class="name-line"></div><span>Date:</span><div class="date-line"></div><span class="pill skillText"></span></div><div class="outer-box"></div><div class="title-pill titleText"></div><div class="instructions instText"></div><div id="problemGrid" class="problem-grid"></div><div class="page-footer"><span class="footer-credit">Made By Bright Learn, Design by <span class="shopNameText"></span></span><span>Worksheet</span></div></section><div id="puzzlePages"></div><section id="pageKey" class="page page-key"><img class="preview-watermark" alt="Watermark Logo" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"><div class="topline"><span>Name:</span><div class="name-line"></div><span>Date:</span><div class="date-line"></div><span class="pill skillText"></span></div><div class="outer-box"></div><div class="answer-title">Answer Key</div><div class="instructions instText"></div><div id="keyGrid" class="key-grid"></div><div class="page-footer"><span class="footer-credit">Made By Bright Learn, Design by <span class="shopNameText"></span></span><span>Answer Key</span></div></section></div></main></div>
+<script>
+let img=null,logoImgUrl=null,puzzleOrders=[];
+function setStatus(t){document.getElementById('status').textContent=t}
+function makeDraggable(el){
+  el.style.cursor='move';
+  el.addEventListener('mousedown',onMouseDown);
+  el.addEventListener('touchstart',onTouchStart,{passive:false});
+  function onMouseDown(e){
+    e.preventDefault();
+    initDrag(e.clientX,e.clientY);
+    document.addEventListener('mousemove',onMouseMove);
+    document.addEventListener('mouseup',onMouseUp);
+  }
+  function onTouchStart(e){
+    if(e.touches.length===1){
+      e.preventDefault();
+      initDrag(e.touches[0].clientX,e.touches[0].clientY);
+      document.addEventListener('touchmove',onTouchMove,{passive:false});
+      document.addEventListener('touchend',onTouchEnd);
+    }
+  }
+  let startX,startY,startLeft,startTop;
+  function initDrag(clientX,clientY){
+    startX=clientX;
+    startY=clientY;
+    startLeft=el.offsetLeft;
+    startTop=el.offsetTop;
+    el.style.position='absolute';
+    el.style.right='auto';
+    el.style.bottom='auto';
+    el.style.margin='0';
+    el.style.transform='none';
+    el.style.left=startLeft+'px';
+    el.style.top=startTop+'px';
+  }
+  function onMouseMove(e){
+    moveDrag(e.clientX,e.clientY);
+  }
+  function onTouchMove(e){
+    if(e.touches.length===1){
+      moveDrag(e.touches[0].clientX,e.touches[0].clientY);
+    }
+  }
+  function moveDrag(clientX,clientY){
+    let dx=clientX-startX;
+    let dy=clientY-startY;
+    let newLeft=startLeft+dx;
+    let newTop=startTop+dy;
+    let parent=el.offsetParent;
+    if(parent){
+      let maxLeft=parent.clientWidth-el.offsetWidth;
+      let maxTop=parent.clientHeight-el.offsetHeight;
+      newLeft=Math.max(0,Math.min(newLeft,maxLeft));
+      newTop=Math.max(0,Math.min(newTop,maxTop));
+    }
+    el.style.left=newLeft+'px';
+    el.style.top=newTop+'px';
+  }
+  function onMouseUp(){
+    document.removeEventListener('mousemove',onMouseMove);
+    document.removeEventListener('mouseup',onMouseUp);
+  }
+  function onTouchEnd(){
+    document.removeEventListener('touchmove',onTouchMove);
+    document.removeEventListener('touchend',onTouchEnd);
+  }
+}
+function lines(id){return document.getElementById(id).value.split('\n').map(x=>x.trim()).filter(Boolean)}
+function totalCells(){return +rows.value*+cols.value}
+function problemHTML(s){let p=s.replace(/x/gi,'×').split('×');if(p.length==2){return `<div class="math-problem"><div class="math-top">${p[0].trim()}</div><div class="math-bottom"><span class="math-op">×</span><span class="math-num">${p[1].trim()}</span></div></div>`}let d=s.split('/');if(d.length==2){return `<div class="math-fraction"><div class="math-numerator">${d[0].trim()}</div><div class="math-denominator">${d[1].trim()}</div></div>`}return s}
+function fisherYates(arr){const a=[...arr];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+function factorialLimit(n){let r=1;for(let i=2;i<=n;i++){r*=i;if(r>1000000)return r}return r}
+function generateUniqueOrders(count,total){const base=[...Array(total).keys()],seen=new Set(),orders=[];let max=Math.min(count,factorialLimit(total)),attempts=0;while(orders.length<max&&attempts<count*80){const o=fisherYates(base),k=o.join(',');if(!seen.has(k)){seen.add(k);orders.push(o)}attempts++}return orders}
+function sampleArt(ctx,w,h){ctx.fillStyle='white';ctx.fillRect(0,0,w,h);ctx.strokeStyle='#111';ctx.lineWidth=5;ctx.font='900 72px Arial';ctx.strokeText('April Fools!',70,120);ctx.beginPath();ctx.ellipse(w/2,h/2,w*.38,h*.45,0,0,Math.PI*2);ctx.stroke();ctx.beginPath();ctx.arc(w*.48,h*.56,95,0,Math.PI*2);ctx.stroke();ctx.font='900 46px Arial';ctx.strokeText('4',w*.76,h*.82);for(let i=0;i<20;i++){const x=(i*73)%w,y=(i*139)%h;ctx.beginPath();ctx.arc(x,y,8,0,Math.PI*2);ctx.stroke()}}
+function drawCrop(canvas,idx,r,c){const ctx=canvas.getContext('2d');ctx.clearRect(0,0,canvas.width,canvas.height);if(img){const sx=(idx%c)*img.width/c,sy=Math.floor(idx/c)*img.height/r;ctx.drawImage(img,sx,sy,img.width/c,img.height/r,0,0,canvas.width,canvas.height)}else{const temp=document.createElement('canvas');temp.width=900;temp.height=900;sampleArt(temp.getContext('2d'),900,900);const sx=(idx%c)*900/c,sy=Math.floor(idx/c)*900/r;ctx.drawImage(temp,sx,sy,900/c,900/r,0,0,canvas.width,canvas.height)}}
+function drawFull(canvas){const ctx=canvas.getContext('2d');ctx.clearRect(0,0,canvas.width,canvas.height);if(img)ctx.drawImage(img,0,0,canvas.width,canvas.height);else sampleArt(ctx,canvas.width,canvas.height)}
+function renderPuzzlePage(order,num){
+  const r=+rows.value,c=+cols.value,ans=lines('answers');
+  const sec=document.createElement('section');
+  sec.className='page page-puzzle';
+  const isWatermarkChecked = document.getElementById('toggleWatermark')?.checked || false;
+  if (isWatermarkChecked) {
+    sec.classList.add('show-watermark');
+  }
+  sec.innerHTML=`<img class="preview-watermark" alt="Watermark Logo" src="${logoImgUrl || 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'}"><div class="topline"><span>Name:</span><div class="name-line"></div><span>Date:</span><div class="date-line"></div><span class="pill skillText">${skill.value}</span></div><div class="outer-box"></div><div class="title-pill titleText">${title.value}</div><div class="instructions instText">${document.getElementById('instPuzzle').value}</div><div class="piece-grid"></div><div class="page-footer"><span class="footer-credit">Made By Bright Learn, Design by <span class="shopNameText">${document.getElementById('shopName')?.value || ''}</span></span><span>Puzzle Page ${num}</span></div>`;const grid=sec.querySelector('.piece-grid');grid.style.gridTemplateColumns=`repeat(${c},1fr)`;grid.style.gridTemplateRows=`repeat(${r},1fr)`;order.forEach(realIdx=>{const p=document.createElement('div');p.className='piece';const cv=document.createElement('canvas');cv.width=300;cv.height=300;drawCrop(cv,realIdx,r,c);const n=document.createElement('div');n.className='num';n.textContent=ans[realIdx]||'';const randLeft=Math.floor(Math.random()*60)+5;const randTop=Math.floor(Math.random()*60)+5;n.style.left=randLeft+'%';n.style.top=randTop+'%';n.style.right='auto';n.style.bottom='auto';makeDraggable(n);p.append(cv,n);grid.appendChild(p)});return sec}
+function renderAll(){document.querySelectorAll('.titleText').forEach(e=>e.textContent=title.value);document.querySelectorAll('.skillText').forEach(e=>e.textContent=skill.value);document.querySelectorAll('.page-problem .instText').forEach(e=>e.textContent=document.getElementById('instWorksheet').value);document.querySelectorAll('.page-key .instText').forEach(e=>e.textContent=document.getElementById('instKey').value);document.querySelectorAll('.shopNameText').forEach(e=>e.textContent=document.getElementById('shopName')?.value || '');const r=+rows.value,c=+cols.value,total=r*c,probs=lines('problems'),ans=lines('answers');const pg=document.getElementById('problemGrid');pg.innerHTML='';pg.style.gridTemplateColumns=`repeat(${c},1fr)`;pg.style.gridTemplateRows=`repeat(${r},1fr)`;for(let i=0;i<total;i++){const cell=document.createElement('div');cell.className='problem-cell';cell.innerHTML=problemHTML(probs[i]||'');pg.appendChild(cell)}if(puzzleOrders.length===0||puzzleOrders[0]?.length!==total)puzzleOrders=[fisherYates([...Array(total).keys()])];const box=document.getElementById('puzzlePages');box.innerHTML='';puzzleOrders.forEach((order,i)=>box.appendChild(renderPuzzlePage(order,i+1)));const kg=document.getElementById('keyGrid');kg.innerHTML='';kg.style.gridTemplateColumns=`repeat(${c},1fr)`;kg.style.gridTemplateRows=`repeat(${r},1fr)`;const bg=document.createElement('canvas');bg.width=900;bg.height=900;drawFull(bg);kg.appendChild(bg);const keyCells=[];for(let i=0;i<total;i++){const cell=document.createElement('div');cell.className='key-cell';kg.appendChild(cell);keyCells.push(cell)}ans.forEach((a,i)=>{if(keyCells[i]){const tag=document.createElement('div');tag.className='keynum';tag.textContent=a;makeDraggable(tag);keyCells[i].appendChild(tag)}});
+const allWatermarkImgs=document.querySelectorAll('.preview-watermark');
+if(logoImgUrl){
+  allWatermarkImgs.forEach(img=>{img.src=logoImgUrl});
+}else{
+  allWatermarkImgs.forEach(img=>{img.src='data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'});
+}
+const isWatermarkChecked = document.getElementById('toggleWatermark')?.checked || false;
+document.querySelectorAll('.page').forEach(p => {
+  if (isWatermarkChecked) {
+    p.classList.add('show-watermark');
+  } else {
+    p.classList.remove('show-watermark');
+  }
+});
+setStatus(`Preview ready: ${puzzleOrders.length} puzzle page(s)`)}
+function generatePuzzlePages(){let count=+pageCount.value;count=Math.max(10,Math.min(500,count));pageCount.value=count;puzzleOrders=generateUniqueOrders(count,totalCells());renderAll();setStatus(`Generated ${puzzleOrders.length} unique random puzzle pages with Fisher–Yates Shuffle`)}
+function clearPuzzlePages(){puzzleOrders=[];renderAll()}
+function loadImage(fileOrEvent){
+  let f = null;
+  if (fileOrEvent instanceof File) {
+    f = fileOrEvent;
+  } else if (fileOrEvent && fileOrEvent.target && fileOrEvent.target.files) {
+    f = fileOrEvent.target.files[0];
+  }
+  if(!f) return;
+  const nameDisplay = document.getElementById('fileNameDisplay');
+  if (nameDisplay) {
+    nameDisplay.textContent = `รูปภาพ: ${f.name}`;
+    nameDisplay.style.color = '#10b981';
+    nameDisplay.style.fontWeight = 'bold';
+  }
+  const im=new Image();
+  im.onload=()=>{img=im;renderAll()};
+  im.src=URL.createObjectURL(f);
+}
+function loadLogo(fileOrEvent){
+  let f = null;
+  if (fileOrEvent instanceof File) {
+    f = fileOrEvent;
+  } else if (fileOrEvent && fileOrEvent.target && fileOrEvent.target.files) {
+    f = fileOrEvent.target.files[0];
+  }
+  if(!f) return;
+  const nameDisplay = document.getElementById('logoNameDisplay');
+  if (nameDisplay) {
+    nameDisplay.textContent = `โลโก้: ${f.name}`;
+    nameDisplay.style.color = '#10b981';
+    nameDisplay.style.fontWeight = 'bold';
+  }
+  logoImgUrl = URL.createObjectURL(f);
+  renderAll();
+}
+function showPage(which){document.querySelectorAll('.page').forEach(p=>p.classList.add('hidden'));if(which==='all')document.querySelectorAll('.page').forEach(p=>p.classList.remove('hidden'));if(which==='problem')document.querySelectorAll('.page-problem').forEach(p=>p.classList.remove('hidden'));if(which==='pieces')document.querySelectorAll('.page-puzzle').forEach(p=>p.classList.remove('hidden'));if(which==='key')document.querySelectorAll('.page-key').forEach(p=>p.classList.remove('hidden'))}
+async function pageToCanvas(page){return await html2canvas(page,{scale:4,backgroundColor:'#ffffff',useCORS:true,onclone:(clonedDoc)=>{const originalCanvases=page.querySelectorAll('canvas');const clonedCanvases=clonedDoc.querySelectorAll('canvas');originalCanvases.forEach((orig,idx)=>{const clone=clonedCanvases[idx];if(clone){const ctx=clone.getContext('2d');clone.width=orig.width;clone.height=orig.height;ctx.drawImage(orig,0,0)}})}})}
+async function exportPagesToPDF(pages,filename){const{jsPDF}=window.jspdf;const pdf=new jsPDF({orientation:'portrait',unit:'in',format:'letter'});const hiddenElements=[];pages.forEach(p=>{if(p.classList.contains('hidden')){hiddenElements.push(p);p.classList.remove('hidden')}});for(let i=0;i<pages.length;i++){const canvas=await pageToCanvas(pages[i]);const imgData=canvas.toDataURL('image/jpeg',0.95);if(i>0)pdf.addPage('letter','portrait');pdf.addImage(imgData,'JPEG',0,0,8.5,11)}hiddenElements.forEach(p=>{p.classList.add('hidden')});pdf.save(filename)}
+function allPages(){return[...document.querySelectorAll('.page')]}function worksheetPages(){return[...document.querySelectorAll('.page-problem')]}function puzzlePagesOnly(){return[...document.querySelectorAll('.page-puzzle')]}function keyPages(){return[...document.querySelectorAll('.page-key')]}
+function toggleWatermarkPreview(show) {
+  document.querySelectorAll('.page').forEach(p => {
+    if (show) {
+      p.classList.add('show-watermark');
+    } else {
+      p.classList.remove('show-watermark');
+    }
+  });
+}
+async function exportPreviewPDF(){
+  setStatus('Exporting Preview PDF...');
+  const wasChecked = document.getElementById('toggleWatermark')?.checked || false;
+  document.querySelectorAll('.page').forEach(p => p.classList.add('show-watermark'));
+  const pages=[];
+  const ws=document.querySelector('.page-problem');
+  if(ws)pages.push(ws);
+  const pz=document.querySelector('.page-puzzle');
+  if(pz)pages.push(pz);
+  const key=document.querySelector('.page-key');
+  if(key)pages.push(key);
+  await exportPagesToPDF(pages,'Preview-Worksheet.pdf');
+  document.querySelectorAll('.page').forEach(p => {
+    if (wasChecked) {
+      p.classList.add('show-watermark');
+    } else {
+      p.classList.remove('show-watermark');
+    }
+  });
+  setStatus('Preview PDF exported');
+}
+async function exportAllPDF(){setStatus('Exporting full PDF...');await exportPagesToPDF(allPages(),'Full-Math-Mystery-Picture.pdf');setStatus('Full PDF exported')}async function exportWorksheetPDF(){setStatus('Exporting Worksheet.pdf...');await exportPagesToPDF(worksheetPages(),'Worksheet.pdf');setStatus('Worksheet.pdf exported')}async function exportPuzzlePDF(){setStatus('Exporting Puzzle Pages.pdf...');await exportPagesToPDF(puzzlePagesOnly(),'Puzzle-Pages.pdf');setStatus('Puzzle Pages.pdf exported')}async function exportKeyPDF(){setStatus('Exporting Answer Key.pdf...');await exportPagesToPDF(keyPages(),'Answer-Key.pdf');setStatus('Answer Key.pdf exported')}
+async function exportPNGZip(format){setStatus(`Exporting ${format.toUpperCase()} ZIP...`);const zip=new JSZip();const pages=allPages();for(let i=0;i<pages.length;i++){const canvas=await pageToCanvas(pages[i]);const mime=format==='jpg'?'image/jpeg':'image/png';const dataURL=canvas.toDataURL(mime,0.95);const base64=dataURL.split(',')[1];const name=String(i+1).padStart(3,'0')+(i===0?'-Worksheet':i===pages.length-1?'-Answer-Key':'-Puzzle-Page')+'.'+(format==='jpg'?'jpg':'png');zip.file(name,base64,{base64:true})}const blob=await zip.generateAsync({type:'blob'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`Math-Mystery-Picture-${format.toUpperCase()}.zip`;a.click();URL.revokeObjectURL(a.href);setStatus(`${format.toUpperCase()} ZIP exported`)}
+// Setup Drag & Drop
+const dropzone = document.getElementById('dropzone');
+const fileInput = document.getElementById('fileInput');
+if (dropzone && fileInput) {
+  dropzone.addEventListener('click', () => fileInput.click());
+  ['dragenter', 'dragover'].forEach(eventName => {
+    dropzone.addEventListener(eventName, (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      dropzone.classList.add('dragover');
+    }, false);
+  });
+  ['dragleave', 'drop'].forEach(eventName => {
+    dropzone.addEventListener(eventName, (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      dropzone.classList.remove('dragover');
+    }, false);
+  });
+  dropzone.addEventListener('drop', (e) => {
+    const dt = e.dataTransfer;
+    const files = dt.files;
+    if (files.length > 0) {
+      fileInput.files = files;
+      loadImage(files[0]);
+    }
+  }, false);
+}
+// Setup Logo Drag & Drop
+const logoDropzone = document.getElementById('logoDropzone');
+const logoFileInput = document.getElementById('logoFileInput');
+if (logoDropzone && logoFileInput) {
+  logoDropzone.addEventListener('click', () => logoFileInput.click());
+  ['dragenter', 'dragover'].forEach(eventName => {
+    logoDropzone.addEventListener(eventName, (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      logoDropzone.classList.add('dragover');
+    }, false);
+  });
+  ['dragleave', 'drop'].forEach(eventName => {
+    logoDropzone.addEventListener(eventName, (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      logoDropzone.classList.remove('dragover');
+    }, false);
+  });
+  logoDropzone.addEventListener('drop', (e) => {
+    const dt = e.dataTransfer;
+    const files = dt.files;
+    if (files.length > 0) {
+      logoFileInput.files = files;
+      loadLogo(files[0]);
+    }
+  }, false);
+}
+renderAll();
+</script></body></html>
