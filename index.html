@@ -117,7 +117,7 @@
   align-items: center;
   user-select: none;
 }
-</style></head><body>
+.lock-btn{background:none;border:none;padding:0;margin-left:6px;width:auto;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-size:0.85em;opacity:0.6;transition:opacity 0.2s,transform 0.2s;user-select:none;margin-top:0}.lock-btn:hover{opacity:1;transform:scale(1.1)}.keynum,.num{display:inline-flex;align-items:center;gap:4px}.keynum.locked,.num.locked{border-color:#6d28d9;background:#f5f3ff;cursor:default!important}@media print{.lock-btn{display:none!important}}</style></head><body>
 <div class="app"><aside class="side"><h1>Math Mystery Picture Generator Pro</h1>
 <div class="box"><h3>Worksheet</h3><label>Worksheet Title</label><input id="title" value="April Fools Day Math Mystery Picture"><label>Skill Tag</label><input id="skill" value="1-Digit Multiplication"><label>Instructions (Worksheet)</label><textarea id="instWorksheet" style="min-height:80px;" oninput="renderAll()">Solve the equations below, then cut out the picture squares.
 Match the numbers on the picture squares to your answers and
@@ -199,24 +199,33 @@ glue them in the correct spots to reveal the mystery picture.</textarea><label>I
   </div>
 </div>
 </div>
+<div class="box"><h3>Lock Positions</h3><div class="row"><button onclick="lockAllNumbers()">Lock All</button><button class="gray" onclick="unlockAllNumbers()">Unlock All</button></div><p class="hint" style="margin-top:8px;">ล็อกตำแหน่งตัวเลขไม่ให้เคลื่อนย้าย และใช้ตำแหน่งเดียวกันในหน้า Puzzle Pages ตามหน้า Answer Key</p></div>
 <div class="box"><h3>Random Puzzle Pages</h3><label>Number of Puzzle Pages</label><input id="pageCount" type="number" value="10" min="10" max="500"><button class="orange" onclick="generatePuzzlePages()">Generate 10–500 Puzzle Pages</button><button class="gray" onclick="clearPuzzlePages()">Clear Puzzle Pages</button><p class="hint">ใช้ Fisher–Yates Shuffle และกันหน้า Shuffle ซ้ำกัน</p><div id="status" class="status">Ready</div></div>
 <div class="box"><h3>Export</h3><button class="green" onclick="exportAllPDF()">Export Full PDF</button><button class="orange" onclick="exportPreviewPDF()">Export Preview.pdf</button><button onclick="exportWorksheetPDF()">Export Worksheet.pdf</button><button onclick="exportPuzzlePDF()">Export Puzzle Pages.pdf</button><button onclick="exportKeyPDF()">Export Answer Key.pdf</button><button class="gray" onclick="exportPNGZip('png')">Export PNG ZIP</button><button class="gray" onclick="exportPNGZip('jpg')">Export JPG ZIP</button></div></aside>
 <main class="main"><div class="toolbar"><button onclick="showPage('cover')">Teacher Advice</button><button onclick="showPage('problem')">Worksheet</button><button onclick="showPage('pieces')">Puzzle Pages</button><button onclick="showPage('key')">Answer Key</button><button onclick="showPage('all')">Show All</button><button class="green" onclick="window.print()">Print</button></div>
 <div id="pages"><section id="pageCover" class="page page-cover"><img id="coverImageDisplay" class="cover-image-full hidden" alt="Cover Image"><div id="coverPlaceholder" class="cover-placeholder"><span>(อัปโหลดรูปคำแนะนำครูที่แถบด้านข้าง เพื่อแสดงรูปเต็มหน้าตรงนี้)</span></div></section><section id="pageProblem" class="page page-problem"><img class="preview-watermark" alt="Watermark Logo" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"><div class="topline"><span>Name:</span><div class="name-line"></div><span>Date:</span><div class="date-line"></div><span class="pill skillText"></span></div><div class="outer-box"></div><div class="title-pill titleText"></div><div class="instructions instText"></div><div id="problemGrid" class="problem-grid"></div><div class="page-footer"><span class="footer-credit">Made By Bright Learn, Design by <span class="shopNameText"></span></span><span>Worksheet</span></div></section><div id="puzzlePages"></div><section id="pageKey" class="page page-key"><img class="preview-watermark" alt="Watermark Logo" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"><div class="topline"><span>Name:</span><div class="name-line"></div><span>Date:</span><div class="date-line"></div><span class="pill skillText"></span></div><div class="outer-box"></div><div class="answer-title">Answer Key</div><div class="instructions instText"></div><div id="keyGrid" class="key-grid"></div><div class="page-footer"><span class="footer-credit">Made By Bright Learn, Design by <span class="shopNameText"></span></span><span>Answer Key</span></div></section></div></main></div>
 <script>
-let img=null,logoImgUrl=null,puzzleOrders=[];
+let img=null,logoImgUrl=null,puzzleOrders=[],numberStates=[],activeTab='all';
 function setStatus(t){document.getElementById('status').textContent=t}
-function makeDraggable(el){
-  el.style.cursor='move';
+function makeDraggable(el,index){
+  if (numberStates[index] && numberStates[index].locked) {
+    el.style.cursor='default';
+  } else {
+    el.style.cursor='move';
+  }
   el.addEventListener('mousedown',onMouseDown);
   el.addEventListener('touchstart',onTouchStart,{passive:false});
   function onMouseDown(e){
+    if(e.target.closest('.lock-btn'))return;
+    if(numberStates[index]&&numberStates[index].locked)return;
     e.preventDefault();
     initDrag(e.clientX,e.clientY);
     document.addEventListener('mousemove',onMouseMove);
     document.addEventListener('mouseup',onMouseUp);
   }
   function onTouchStart(e){
+    if(e.target.closest('.lock-btn'))return;
+    if(numberStates[index]&&numberStates[index].locked)return;
     if(e.touches.length===1){
       e.preventDefault();
       initDrag(e.touches[0].clientX,e.touches[0].clientY);
@@ -264,11 +273,91 @@ function makeDraggable(el){
   function onMouseUp(){
     document.removeEventListener('mousemove',onMouseMove);
     document.removeEventListener('mouseup',onMouseUp);
+    savePosition();
   }
   function onTouchEnd(){
     document.removeEventListener('touchmove',onTouchMove);
     document.removeEventListener('touchend',onTouchEnd);
+    savePosition();
   }
+  function savePosition(){
+    let parent=el.offsetParent;
+    if(parent && parent.clientWidth > 0 && parent.clientHeight > 0){
+      let leftPct=(el.offsetLeft/parent.clientWidth)*100;
+      let topPct=(el.offsetTop/parent.clientHeight)*100;
+      if(!numberStates[index]){
+        numberStates[index]={locked:false,hasDragged:false,leftPct:50,topPct:50};
+      }
+      numberStates[index].leftPct=leftPct;
+      numberStates[index].topPct=topPct;
+      numberStates[index].hasDragged=true;
+      renderAll();
+    }
+  }
+}
+function toggleLock(e,index){
+  if(e){
+    e.stopPropagation();
+    e.preventDefault();
+  }
+  if(!numberStates[index]){
+    numberStates[index]={locked:false,hasDragged:false,leftPct:50,topPct:50};
+  }
+  numberStates[index].locked=!numberStates[index].locked;
+  if(numberStates[index].locked&&!numberStates[index].hasDragged){
+    const keyCells=document.querySelectorAll('.key-cell');
+    if(keyCells[index]){
+      const tag=keyCells[index].querySelector('.keynum');
+      if(tag){
+        const parent=keyCells[index];
+        const leftPct=(tag.offsetLeft/parent.clientWidth)*100;
+        const topPct=(tag.offsetTop/parent.clientHeight)*100;
+        numberStates[index].leftPct=leftPct;
+        numberStates[index].topPct=topPct;
+        numberStates[index].hasDragged=true;
+      }
+    }
+  }
+  renderAll();
+}
+function lockAllNumbers(){
+  const total=totalCells();
+  if(numberStates.length!==total){
+    const newStates=[];
+    for(let i=0;i<total;i++){
+      newStates[i]=numberStates[i]||{locked:false,hasDragged:false,leftPct:50,topPct:50};
+    }
+    numberStates=newStates;
+  }
+  for(let i=0;i<total;i++){
+    numberStates[i].locked=true;
+    if(!numberStates[i].hasDragged){
+      const keyCells=document.querySelectorAll('.key-cell');
+      if(keyCells[i]){
+        const tag=keyCells[i].querySelector('.keynum');
+        if(tag){
+          const parent=keyCells[i];
+          const leftPct=(tag.offsetLeft/parent.clientWidth)*100;
+          const topPct=(tag.offsetTop/parent.clientHeight)*100;
+          numberStates[i].leftPct=leftPct;
+          numberStates[i].topPct=topPct;
+          numberStates[i].hasDragged=true;
+        }
+      }
+    }
+  }
+  renderAll();
+  setStatus("Locked all number positions");
+}
+function unlockAllNumbers(){
+  const total=totalCells();
+  for(let i=0;i<total;i++){
+    if(numberStates[i]){
+      numberStates[i].locked=false;
+    }
+  }
+  renderAll();
+  setStatus("Unlocked all number positions");
 }
 function lines(id){return document.getElementById(id).value.split('\n').map(x=>x.trim()).filter(Boolean)}
 function totalCells(){return +rows.value*+cols.value}
@@ -287,8 +376,8 @@ function renderPuzzlePage(order,num){
   if (isWatermarkChecked) {
     sec.classList.add('show-watermark');
   }
-  sec.innerHTML=`<img class="preview-watermark" alt="Watermark Logo" src="${logoImgUrl || 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'}"><div class="topline"><span>Name:</span><div class="name-line"></div><span>Date:</span><div class="date-line"></div><span class="pill skillText">${skill.value}</span></div><div class="outer-box"></div><div class="title-pill titleText">${title.value}</div><div class="instructions instText">${document.getElementById('instPuzzle').value}</div><div class="piece-grid"></div><div class="page-footer"><span class="footer-credit">Made By Bright Learn, Design by <span class="shopNameText">${document.getElementById('shopName')?.value || ''}</span></span><span>Puzzle Page ${num}</span></div>`;const grid=sec.querySelector('.piece-grid');grid.style.gridTemplateColumns=`repeat(${c},1fr)`;grid.style.gridTemplateRows=`repeat(${r},1fr)`;order.forEach(realIdx=>{const p=document.createElement('div');p.className='piece';const cv=document.createElement('canvas');cv.width=300;cv.height=300;drawCrop(cv,realIdx,r,c);const n=document.createElement('div');n.className='num';n.textContent=ans[realIdx]||'';const randLeft=Math.floor(Math.random()*60)+5;const randTop=Math.floor(Math.random()*60)+5;n.style.left=randLeft+'%';n.style.top=randTop+'%';n.style.right='auto';n.style.bottom='auto';makeDraggable(n);p.append(cv,n);grid.appendChild(p)});return sec}
-function renderAll(){document.querySelectorAll('.titleText').forEach(e=>e.textContent=title.value);document.querySelectorAll('.skillText').forEach(e=>e.textContent=skill.value);document.querySelectorAll('.page-problem .instText').forEach(e=>e.textContent=document.getElementById('instWorksheet').value);document.querySelectorAll('.page-key .instText').forEach(e=>e.textContent=document.getElementById('instKey').value);document.querySelectorAll('.shopNameText').forEach(e=>e.textContent=document.getElementById('shopName')?.value || '');const r=+rows.value,c=+cols.value,total=r*c,probs=lines('problems'),ans=lines('answers');const pg=document.getElementById('problemGrid');pg.innerHTML='';pg.style.gridTemplateColumns=`repeat(${c},1fr)`;pg.style.gridTemplateRows=`repeat(${r},1fr)`;for(let i=0;i<total;i++){const cell=document.createElement('div');cell.className='problem-cell';cell.innerHTML=problemHTML(probs[i]||'');pg.appendChild(cell)}if(puzzleOrders.length===0||puzzleOrders[0]?.length!==total)puzzleOrders=[fisherYates([...Array(total).keys()])];const box=document.getElementById('puzzlePages');box.innerHTML='';puzzleOrders.forEach((order,i)=>box.appendChild(renderPuzzlePage(order,i+1)));const kg=document.getElementById('keyGrid');kg.innerHTML='';kg.style.gridTemplateColumns=`repeat(${c},1fr)`;kg.style.gridTemplateRows=`repeat(${r},1fr)`;const bg=document.createElement('canvas');bg.width=900;bg.height=900;drawFull(bg);kg.appendChild(bg);const keyCells=[];for(let i=0;i<total;i++){const cell=document.createElement('div');cell.className='key-cell';kg.appendChild(cell);keyCells.push(cell)}ans.forEach((a,i)=>{if(keyCells[i]){const tag=document.createElement('div');tag.className='keynum';tag.textContent=a;makeDraggable(tag);keyCells[i].appendChild(tag)}});
+  sec.innerHTML=`<img class="preview-watermark" alt="Watermark Logo" src="${logoImgUrl || 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'}"><div class="topline"><span>Name:</span><div class="name-line"></div><span>Date:</span><div class="date-line"></div><span class="pill skillText">${skill.value}</span></div><div class="outer-box"></div><div class="title-pill titleText">${title.value}</div><div class="instructions instText">${document.getElementById('instPuzzle').value}</div><div class="piece-grid"></div><div class="page-footer"><span class="footer-credit">Made By Bright Learn, Design by <span class="shopNameText">${document.getElementById('shopName')?.value || ''}</span></span><span>Puzzle Page ${num}</span></div>`;const grid=sec.querySelector('.piece-grid');grid.style.gridTemplateColumns=`repeat(${c},1fr)`;grid.style.gridTemplateRows=`repeat(${r},1fr)`;order.forEach(realIdx=>{const p=document.createElement('div');p.className='piece';const cv=document.createElement('canvas');cv.width=300;cv.height=300;drawCrop(cv,realIdx,r,c);const n=document.createElement('div');n.className='num';const state=numberStates[realIdx];if(state&&state.locked){n.classList.add('locked')}const textSpan=document.createElement('span');textSpan.textContent=ans[realIdx]||'';n.appendChild(textSpan);const lockBtn=document.createElement('button');lockBtn.className='lock-btn';lockBtn.innerHTML=(state&&state.locked)?'🔒':'🔓';lockBtn.title=(state&&state.locked)?'Unlock':'Lock';lockBtn.onclick=(e)=>toggleLock(e,realIdx);n.appendChild(lockBtn);if(state&&state.locked){n.style.position='absolute';n.style.left=state.leftPct+'%';n.style.top=state.topPct+'%';n.style.right='auto';n.style.bottom='auto';n.style.margin='0';n.style.transform='none'}else{const randLeft=Math.floor(Math.random()*60)+5;const randTop=Math.floor(Math.random()*60)+5;n.style.left=randLeft+'%';n.style.top=randTop+'%';n.style.right='auto';n.style.bottom='auto'}makeDraggable(n,realIdx);p.append(cv,n);grid.appendChild(p)});return sec}
+function renderAll(){document.querySelectorAll('.titleText').forEach(e=>e.textContent=title.value);document.querySelectorAll('.skillText').forEach(e=>e.textContent=skill.value);document.querySelectorAll('.page-problem .instText').forEach(e=>e.textContent=document.getElementById('instWorksheet').value);document.querySelectorAll('.page-key .instText').forEach(e=>e.textContent=document.getElementById('instKey').value);document.querySelectorAll('.shopNameText').forEach(e=>e.textContent=document.getElementById('shopName')?.value || '');const r=+rows.value,c=+cols.value,total=r*c,probs=lines('problems'),ans=lines('answers');if(numberStates.length!==total){const newStates=[];for(let i=0;i<total;i++){newStates[i]=numberStates[i]||{locked:false,hasDragged:false,leftPct:50,topPct:50}}numberStates=newStates}const pg=document.getElementById('problemGrid');pg.innerHTML='';pg.style.gridTemplateColumns=`repeat(${c},1fr)`;pg.style.gridTemplateRows=`repeat(${r},1fr)`;for(let i=0;i<total;i++){const cell=document.createElement('div');cell.className='problem-cell';cell.innerHTML=problemHTML(probs[i]||'');pg.appendChild(cell)}if(puzzleOrders.length===0||puzzleOrders[0]?.length!==total)puzzleOrders=[fisherYates([...Array(total).keys()])];const box=document.getElementById('puzzlePages');box.innerHTML='';puzzleOrders.forEach((order,i)=>box.appendChild(renderPuzzlePage(order,i+1)));const kg=document.getElementById('keyGrid');kg.innerHTML='';kg.style.gridTemplateColumns=`repeat(${c},1fr)`;kg.style.gridTemplateRows=`repeat(${r},1fr)`;const bg=document.createElement('canvas');bg.width=900;bg.height=900;drawFull(bg);kg.appendChild(bg);const keyCells=[];for(let i=0;i<total;i++){const cell=document.createElement('div');cell.className='key-cell';kg.appendChild(cell);keyCells.push(cell)}ans.forEach((a,i)=>{if(keyCells[i]){const tag=document.createElement('div');tag.className='keynum';const state=numberStates[i];if(state&&state.locked){tag.classList.add('locked')}const textSpan=document.createElement('span');textSpan.textContent=a;tag.appendChild(textSpan);const lockBtn=document.createElement('button');lockBtn.className='lock-btn';lockBtn.innerHTML=(state&&state.locked)?'🔒':'🔓';lockBtn.title=(state&&state.locked)?'Unlock':'Lock';lockBtn.onclick=(e)=>toggleLock(e,i);tag.appendChild(lockBtn);if(state&&state.hasDragged){tag.style.position='absolute';tag.style.left=state.leftPct+'%';tag.style.top=state.topPct+'%';tag.style.right='auto';tag.style.bottom='auto';tag.style.margin='0';tag.style.transform='none'}makeDraggable(tag,i);keyCells[i].appendChild(tag)}});
 const allWatermarkImgs=document.querySelectorAll('.preview-watermark');
 if(logoImgUrl){
   allWatermarkImgs.forEach(img=>{img.src=logoImgUrl});
@@ -305,7 +394,8 @@ document.querySelectorAll('.page').forEach(p => {
 });
 const currentOpacity = document.getElementById('watermarkOpacity')?.value || 30;
 changeWatermarkOpacity(currentOpacity);
-setStatus(`Preview ready: ${puzzleOrders.length} puzzle page(s)`)}
+setStatus(`Preview ready: ${puzzleOrders.length} puzzle page(s)`);
+showPage(activeTab);}
 function generatePuzzlePages(){let count=+pageCount.value;count=Math.max(10,Math.min(500,count));pageCount.value=count;puzzleOrders=generateUniqueOrders(count,totalCells());renderAll();setStatus(`Generated ${puzzleOrders.length} unique random puzzle pages with Fisher–Yates Shuffle`)}
 function clearPuzzlePages(){puzzleOrders=[];renderAll()}
 function loadImage(fileOrEvent){
@@ -322,9 +412,13 @@ function loadImage(fileOrEvent){
     nameDisplay.style.color = '#10b981';
     nameDisplay.style.fontWeight = 'bold';
   }
-  const im=new Image();
-  im.onload=()=>{img=im;renderAll()};
-  im.src=URL.createObjectURL(f);
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const im=new Image();
+    im.onload=()=>{img=im;renderAll()};
+    im.src=e.target.result;
+  };
+  reader.readAsDataURL(f);
 }
 function loadLogo(fileOrEvent){
   let f = null;
@@ -340,12 +434,57 @@ function loadLogo(fileOrEvent){
     nameDisplay.style.color = '#10b981';
     nameDisplay.style.fontWeight = 'bold';
   }
-  logoImgUrl = URL.createObjectURL(f);
-  renderAll();
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    logoImgUrl = e.target.result;
+    renderAll();
+  };
+  reader.readAsDataURL(f);
 }
-function showPage(which){document.querySelectorAll('.page').forEach(p=>p.classList.add('hidden'));if(which==='all')document.querySelectorAll('.page').forEach(p=>p.classList.remove('hidden'));if(which==='cover')document.querySelectorAll('.page-cover').forEach(p=>p.classList.remove('hidden'));if(which==='problem')document.querySelectorAll('.page-problem').forEach(p=>p.classList.remove('hidden'));if(which==='pieces')document.querySelectorAll('.page-puzzle').forEach(p=>p.classList.remove('hidden'));if(which==='key')document.querySelectorAll('.page-key').forEach(p=>p.classList.remove('hidden'))}
-async function pageToCanvas(page){return await html2canvas(page,{scale:4,backgroundColor:'#ffffff',useCORS:true,onclone:(clonedDoc)=>{const originalCanvases=page.querySelectorAll('canvas');const clonedCanvases=clonedDoc.querySelectorAll('canvas');originalCanvases.forEach((orig,idx)=>{const clone=clonedCanvases[idx];if(clone){const ctx=clone.getContext('2d');clone.width=orig.width;clone.height=orig.height;ctx.drawImage(orig,0,0)}})}})}
-async function exportPagesToPDF(pages,filename){const{jsPDF}=window.jspdf;const pdf=new jsPDF({orientation:'portrait',unit:'in',format:'letter'});const hiddenElements=[];pages.forEach(p=>{if(p.classList.contains('hidden')){hiddenElements.push(p);p.classList.remove('hidden')}});for(let i=0;i<pages.length;i++){const canvas=await pageToCanvas(pages[i]);const imgData=canvas.toDataURL('image/jpeg',0.95);if(i>0)pdf.addPage('letter','portrait');pdf.addImage(imgData,'JPEG',0,0,8.5,11)}hiddenElements.forEach(p=>{p.classList.add('hidden')});pdf.save(filename)}
+function showPage(which){activeTab=which;document.querySelectorAll('.page').forEach(p=>p.classList.add('hidden'));if(which==='all')document.querySelectorAll('.page').forEach(p=>p.classList.remove('hidden'));if(which==='cover')document.querySelectorAll('.page-cover').forEach(p=>p.classList.remove('hidden'));if(which==='problem')document.querySelectorAll('.page-problem').forEach(p=>p.classList.remove('hidden'));if(which==='pieces')document.querySelectorAll('.page-puzzle').forEach(p=>p.classList.remove('hidden'));if(which==='key')document.querySelectorAll('.page-key').forEach(p=>p.classList.remove('hidden'))}
+async function pageToCanvas(page){
+  const tempId = 'export-page-temp-' + Math.random().toString(36).substring(2, 9);
+  page.setAttribute('data-export-id', tempId);
+  
+  const canvas = await html2canvas(page,{
+    scale:3,
+    backgroundColor:'#ffffff',
+    useCORS:true,
+    onclone:(clonedDoc)=>{
+      const clonedPage = clonedDoc.querySelector(`[data-export-id="${tempId}"]`);
+      if (clonedPage) {
+        clonedPage.querySelectorAll('.lock-btn').forEach(btn => btn.remove());
+        clonedPage.querySelectorAll('.locked').forEach(el => el.classList.remove('locked'));
+      }
+    }
+  });
+  
+  page.removeAttribute('data-export-id');
+  return canvas;
+}
+async function exportPagesToPDF(pages,filename){
+  const {jsPDF} = window.jspdf;
+  const pdf=new jsPDF({orientation:'portrait',unit:'in',format:'letter'});
+  
+  const hiddenElements=[];
+  pages.forEach(p=>{
+    if(p.classList.contains('hidden')){
+      hiddenElements.push(p);
+      p.classList.remove('hidden')
+    }
+  });
+
+  for(let i=0;i<pages.length;i++){
+    const canvas=await pageToCanvas(pages[i]);
+    const imgData=canvas.toDataURL('image/jpeg',0.95);
+    if(i>0)pdf.addPage('letter','portrait');
+    pdf.addImage(imgData,'JPEG',0,0,8.5,11)
+  }
+
+  hiddenElements.forEach(p=>{p.classList.add('hidden')});
+
+  pdf.save(filename)
+}
 function allPages(){return[...document.querySelectorAll('.page')]}function worksheetPages(){return[...document.querySelectorAll('.page-problem')]}function puzzlePagesOnly(){return[...document.querySelectorAll('.page-puzzle')]}function keyPages(){return[...document.querySelectorAll('.page-key')]}
 function toggleWatermarkPreview(show) {
   document.querySelectorAll('.page').forEach(p => {
@@ -432,13 +571,17 @@ function loadCoverImage(fileOrEvent){
   }
   const coverImageDisplay = document.getElementById('coverImageDisplay');
   const coverPlaceholder = document.getElementById('coverPlaceholder');
-  if (coverImageDisplay) {
-    coverImageDisplay.src = URL.createObjectURL(f);
-    coverImageDisplay.classList.remove('hidden');
-  }
-  if (coverPlaceholder) {
-    coverPlaceholder.classList.add('hidden');
-  }
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    if (coverImageDisplay) {
+      coverImageDisplay.src = e.target.result;
+      coverImageDisplay.classList.remove('hidden');
+    }
+    if (coverPlaceholder) {
+      coverPlaceholder.classList.add('hidden');
+    }
+  };
+  reader.readAsDataURL(f);
 }
 // Setup Drag & Drop
 const dropzone = document.getElementById('dropzone');
